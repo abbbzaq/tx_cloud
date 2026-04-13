@@ -2,14 +2,28 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 加载环境变量
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 加载环境变量
+load_dotenv(BASE_DIR / '.env')
 
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+
+def _str_to_bool(value, default=False):
+    """将环境变量字符串转换为布尔值。"""
+    if value is None:
+        return default
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _split_csv(value, default=''):
+    """将逗号分隔字符串转换为列表。"""
+    source = value if value is not None else default
+    return [item.strip() for item in source.split(',') if item.strip()]
+
+
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'please-change-this-secret-key-in-production')
+DEBUG = _str_to_bool(os.getenv('DJANGO_DEBUG'), default=True)
+ALLOWED_HOSTS = _split_csv(os.getenv('DJANGO_ALLOWED_HOSTS'), default='127.0.0.1,localhost')
 
 
 ACCESS_KEY_ID = os.getenv('ALIYUN_ACCESS_KEY_ID', '')
@@ -103,5 +117,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS配置
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = _str_to_bool(os.getenv('CORS_ALLOW_ALL_ORIGINS'), default=DEBUG)
+CORS_ALLOWED_ORIGINS = _split_csv(os.getenv('CORS_ALLOWED_ORIGINS'), default='')
+CSRF_TRUSTED_ORIGINS = _split_csv(os.getenv('CSRF_TRUSTED_ORIGINS'), default='')
 

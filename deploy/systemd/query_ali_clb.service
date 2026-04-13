@@ -1,0 +1,18 @@
+[Unit]
+Description=query_ali_clb Django API service
+After=network.target
+
+[Service]
+User=www
+Group=www
+WorkingDirectory=/srv/query_ali_clb
+EnvironmentFile=/srv/query_ali_clb/.env
+ExecStart=/srv/query_ali_clb/.venv/bin/gunicorn config.wsgi:application -c /srv/query_ali_clb/deploy/gunicorn.conf.py
+Restart=always
+RestartSec=5
+KillSignal=SIGQUIT
+TimeoutStopSec=30
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
