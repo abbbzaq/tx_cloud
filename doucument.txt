@@ -1,0 +1,15 @@
+参数
+{
+  "lb_type"=" "
+
+}
+ali=["slb","alb","nlb"]
+tx=["slb","clb"]
+ucloud=["ulb","nlb"]
+
+
+
+{
+
+
+}

@@ -1,0 +1,12 @@
+ali:
+  access_key_id: your_aliyun_access_key_id
+  access_key_secret: your_aliyun_access_key_secret
+  region_id: cn-beijing
+tx:
+  SecretId: your_tencent_secret_id
+  SecretKey: your_tencent_secret_key
+ucloud:
+  region: cn-bj2
+  project_id: org-mdq41z
+  public_key: your_ucloud_public_key
+  private_key: your_ucloud_private_key
