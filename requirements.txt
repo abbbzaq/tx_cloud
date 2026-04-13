@@ -8,7 +8,7 @@ PyYAML==6.0.3
 aliyun-python-sdk-core==2.16.0
 aliyun-python-sdk-slb==3.3.22
 tencentcloud-sdk-python==3.0.1437
-ucloud-sdk-python3==2.0.4
+ucloud-sdk-python3==0.11.89
 alibabacloud-slb20140515==4.0.9
 alibabacloud-alb20200616==2.0.26
 alibabacloud-nlb20220430==2.0.13
