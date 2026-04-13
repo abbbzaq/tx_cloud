@@ -9,10 +9,10 @@ aliyun-python-sdk-core==2.16.0
 aliyun-python-sdk-slb==3.3.22
 tencentcloud-sdk-python==3.0.1437
 ucloud-sdk-python3==0.11.89
-alibabacloud-slb20140515==4.0.9
-alibabacloud-alb20200616==2.0.26
-alibabacloud-nlb20220430==2.0.13
-alibabacloud-tea-openapi==0.4.1
+alibabacloud-slb20140515
+alibabacloud-alb20200616
+alibabacloud-nlb20220430
+alibabacloud-tea-openapi
 
 # Production server
 gunicorn==23.0.0
