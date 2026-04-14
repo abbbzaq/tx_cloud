@@ -123,3 +123,12 @@
 	- 返回体 `nlb_instances` 同步改为 `resp.get('NLBs') or []`
 - 验证方法：构造无监听器/空列表场景调用 UCloud NLB/ULB，同步应返回 200 且列表为空而非抛异常。
 - 防复发：第三方 SDK 返回的集合字段统一通过“可空归一化”处理后再使用。
+
+### 9) 云服务器已配置 .env 但仍提示 UCloud 密钥未配置
+- 触发场景：服务器侧已设置 UCLOUD 密钥环境变量，调用 UCloud 接口仍返回“检测到占位符密钥”。
+- 现象与报错：接口 500，提示读取到 `config/config.yaml` 中占位符密钥。
+- 根因分析：代码仅从 `config/config.yaml` 读取 UCloud 配置，未优先读取环境变量。
+- 解决思路：配置源改为“环境变量优先，配置文件兜底”。
+- 具体改动：UCloud post 初始化阶段新增 `UCLOUD_REGION/UCLOUD_PROJECT_ID/UCLOUD_PUBLIC_KEY/UCLOUD_PRIVATE_KEY` 读取，并更新错误提示文案。
+- 验证方法：仅设置环境变量、保留 config.yaml 占位符，接口应能正常鉴权。
+- 防复发：生产环境统一通过 systemd EnvironmentFile 管理密钥，配置文件仅保留非敏感默认值。

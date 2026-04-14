@@ -870,21 +870,24 @@ class UCloudLoadBalancerView(APIView):
                 os.environ["NO_PROXY"] = "api.ucloud.cn,127.0.0.1,localhost"
 
             with open('config/config.yaml', 'r') as f:
-                config = yaml.safe_load(f)
-                region = str(config.get('ucloud', {}).get('region', '')).strip()
-                project_id = str(config.get('ucloud', {}).get('project_id', '')).strip()
-                public_key = str(config.get('ucloud', {}).get('public_key', '')).strip()
-                private_key = str(config.get('ucloud', {}).get('private_key', '')).strip()
+                config = yaml.safe_load(f) or {}
+                ucloud_cfg = config.get('ucloud', {}) or {}
+
+                # 优先读取环境变量（适配服务器 EnvironmentFile/.env），其次回退到 config.yaml。
+                region = str(os.getenv('UCLOUD_REGION') or ucloud_cfg.get('region', '')).strip()
+                project_id = str(os.getenv('UCLOUD_PROJECT_ID') or ucloud_cfg.get('project_id', '')).strip()
+                public_key = str(os.getenv('UCLOUD_PUBLIC_KEY') or ucloud_cfg.get('public_key', '')).strip()
+                private_key = str(os.getenv('UCLOUD_PRIVATE_KEY') or ucloud_cfg.get('private_key', '')).strip()
 
             if not all([region, project_id, public_key, private_key]):
                 return Response(status=500, data={
                     "msg": "UCloud配置不完整",
-                    "data": {"error": "请检查 config/config.yaml 的 ucloud.region/project_id/public_key/private_key"}
+                    "data": {"error": "请检查 UCLOUD_REGION/UCLOUD_PROJECT_ID/UCLOUD_PUBLIC_KEY/UCLOUD_PRIVATE_KEY 环境变量或 config/config.yaml 对应字段"}
                 })
             if public_key.startswith('your_') or private_key.startswith('your_'):
                 return Response(status=500, data={
                     "msg": "UCloud密钥未配置",
-                    "data": {"error": "检测到占位符密钥，请将 config/config.yaml 中 ucloud.public_key/private_key 替换为真实值"}
+                    "data": {"error": "检测到占位符密钥，请改为真实密钥（优先使用 UCLOUD_PUBLIC_KEY/UCLOUD_PRIVATE_KEY 环境变量）"}
                 })
 
             client = Client({
