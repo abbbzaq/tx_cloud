@@ -287,19 +287,19 @@ class AlibabaCloudLoadBalancerView(APIView):
                                                                           "Normal")
                             zone_mappings = first_nlb.get("ZoneMappings", [])
 
-                            NLB.objects.create(
+                            nlb_instance, _ = NLB.objects.update_or_create(
                                 LoadBalancerId=load_balancer_id,
-                                LoadBalancerName=load_balancer_name,
-                                VpcId=vpc_id,
-                                AddressType=address_type,
-                                AddressIpVersion=address_ip_version,
-                                LoadBalancerStatus=load_balancer_status,
-                                LoadBalancerBusinessStatus=load_balancer_business_status,
-                                ZoneMappings=zone_mappings,
-                                RegionId='cn-beijing'
+                                defaults={
+                                    "LoadBalancerName": load_balancer_name,
+                                    "VpcId": vpc_id,
+                                    "AddressType": address_type,
+                                    "AddressIpVersion": address_ip_version,
+                                    "LoadBalancerStatus": load_balancer_status,
+                                    "LoadBalancerBusinessStatus": load_balancer_business_status,
+                                    "ZoneMappings": zone_mappings,
+                                    "RegionId": 'cn-beijing'
+                                }
                             )
-
-                            nlb_instance = NLB.objects.get(LoadBalancerId=load_balancer_id)
 
                             for listener in listeners:
                                 listener_id = listener.get("ListenerId")
@@ -316,27 +316,28 @@ class AlibabaCloudLoadBalancerView(APIView):
                                     listener_detail_request)
                                 listener_detail_dict = listener_detail_response.body.to_map()
 
-                                NLBListener.objects.create(
+                                NLBListener.objects.update_or_create(
                                     LoadBalancerId=nlb_instance,
                                     ListenerId=listener_id,
-                                    ListenerPort=listener_port,
-                                    ListenerProtocol=listener_protocol,
-                                    ServerGroupId=server_group_id,
-                                    ListenerDescription=listener.get("ListenerDescription", ""),
-                                    ListenerStatus=listener.get("ListenerStatus", "Running"),
-                                    AlpnEnabled=listener_detail_dict.get("AlpnEnabled", False),
-                                    AlpnPolicy=listener_detail_dict.get("AlpnPolicy"),
-                                    CaCertificateIds=listener_detail_dict.get("CaCertificateIds", []),
-                                    CaEnabled=listener_detail_dict.get("CaEnabled", False),
-                                    CertificateIds=listener_detail_dict.get("CertificateIds", []),
-                                    Cps=listener_detail_dict.get("Cps", 10000),
-                                    EndPort=listener_detail_dict.get("EndPort"),
-                                    IdleTimeout=listener_detail_dict.get("IdleTimeout", 900),
-                                    ProxyProtocolEnabled=listener_detail_dict.get("ProxyProtocolEnabled",
-                                                                                  False),
-                                    SecSensorEnabled=listener_detail_dict.get("SecSensorEnabled", False),
-                                    SecurityPolicyId=listener_detail_dict.get("SecurityPolicyId"),
-                                    StartPort=listener_detail_dict.get("StartPort")
+                                    defaults={
+                                        "ListenerPort": listener_port,
+                                        "ListenerProtocol": listener_protocol,
+                                        "ServerGroupId": server_group_id,
+                                        "ListenerDescription": listener.get("ListenerDescription", ""),
+                                        "ListenerStatus": listener.get("ListenerStatus", "Running"),
+                                        "AlpnEnabled": listener_detail_dict.get("AlpnEnabled", False),
+                                        "AlpnPolicy": listener_detail_dict.get("AlpnPolicy"),
+                                        "CaCertificateIds": listener_detail_dict.get("CaCertificateIds", []),
+                                        "CaEnabled": listener_detail_dict.get("CaEnabled", False),
+                                        "CertificateIds": listener_detail_dict.get("CertificateIds", []),
+                                        "Cps": listener_detail_dict.get("Cps", 10000),
+                                        "EndPort": listener_detail_dict.get("EndPort"),
+                                        "IdleTimeout": listener_detail_dict.get("IdleTimeout", 900),
+                                        "ProxyProtocolEnabled": listener_detail_dict.get("ProxyProtocolEnabled", False),
+                                        "SecSensorEnabled": listener_detail_dict.get("SecSensorEnabled", False),
+                                        "SecurityPolicyId": listener_detail_dict.get("SecurityPolicyId"),
+                                        "StartPort": listener_detail_dict.get("StartPort")
+                                    }
                                 )
 
 

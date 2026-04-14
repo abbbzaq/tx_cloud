@@ -23,3 +23,5 @@
 - 助手：已修复阿里云 SLB 的 `update_or_create` 默认字段，移除对 `CreateTime`、`UpdateTime` 的显式赋值，改由模型 `auto_now_add/auto_now` 自动维护，避免上游时间空值触发非空约束。
 - 用户：阿里云 SLB POST 仍报错：`list index out of range`。
 - 助手：已在 SLB 分支对监听器列表增加判空保护，改为 `listeners = body.get("Listeners", [])`，仅在存在监听器时再读取首项字段并写入监听器，避免空列表下标越界。
+- 用户：线上反馈阿里云 NLB 获取报错。
+- 助手：已将阿里云 NLB 实例与监听器写入从 `create` 改为 `update_or_create`，避免重复同步触发唯一键冲突，并保持重复拉取可更新。
