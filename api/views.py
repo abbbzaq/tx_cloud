@@ -14,7 +14,7 @@ from tencentcloud.common.profile.http_profile import HttpProfile
 from api.models import LoadBalancer, SLBListener, NLB, NLBListener, ALB, ALBListener, TxALBModels, TxListenerModel, \
     UcloudULBModels, VServer, UcloudNlbModels, UcloudNlbListenerModels
 from api.serializers import LoadBalancerSerializer, ListenerSerializer, postMethodSerializer, NLBLoadBalancerSerializer, \
-    ALBLoadBalancerSerializer, txSerializer, TxALBSerializer, TxListenerSerializer, UcloudULBSerializer, \
+    ALBLoadBalancerSerializer, NLBListenerSerializer, ALBListenerSerializer, txSerializer, TxALBSerializer, TxListenerSerializer, UcloudULBSerializer, \
     VServerSerializer, UcloudNlbSerializer, UcloudNlbListenerSerializer
 from alibabacloud_slb20140515.client import Client as SlbClient
 from alibabacloud_slb20140515 import models as slb_models
@@ -33,21 +33,23 @@ import os
 
 class AlibabaCloudLoadBalancerView(APIView):
     def get(self, request):
-        if request.data.get("lb_type") == "slb":
+        lb_type = request.query_params.get("lb_type") or request.data.get("lb_type")
+
+        if lb_type == "slb":
             clb_obj = LoadBalancer.objects.all().first()
             serializer = LoadBalancerSerializer(clb_obj)
             lis_obj = SLBListener.objects.all().first()
             serializer_lis = ListenerSerializer(lis_obj)
-        elif request.data.get("lb_type") == "nlb":
+        elif lb_type == "nlb":
             nlb_obj = NLB.objects.all().first()
             serializer = NLBLoadBalancerSerializer(nlb_obj)
             lis_obj = NLBListener.objects.all().first()
-            serializer_lis = ListenerSerializer(lis_obj)
-        elif request.data.get("lb_type") == "alb":
+            serializer_lis = NLBListenerSerializer(lis_obj)
+        elif lb_type == "alb":
             alb_obj = ALB.objects.all().first()
             serializer = ALBLoadBalancerSerializer(alb_obj)
             lis_obj = ALBListener.objects.all().first()
-            serializer_lis = ListenerSerializer(lis_obj)
+            serializer_lis = ALBListenerSerializer(lis_obj)
         else:
             return Response(status=400, data={
                 "msg": "请输入正确的负载均衡类型",
@@ -183,38 +185,41 @@ class AlibabaCloudLoadBalancerView(APIView):
                             request_id = listener_body_ex.get("RequestId")
                             total_count = listener_body_ex.get("TotalCount")
                             max_results = listener_body_ex.get("MaxResults")
+                            slb_listener_id = f"{load_balancer_id}:{listener_port}:{listener_protocol}"
 
-                            SLBListener.objects.create(
-                                LoadBalancerId=load_balancer,
-                                listener_port=listener_port,
-                                backend_server_port=backend_server_port,
-                                listener_protocol=listener_protocol,
-                                scheduler=scheduler,
-                                bandwidth=bandwidth,
-                                status=status,
-                                acl_status=acl_status,
-                                description=description,
-                                tcp_listener_config=tcp_listener_config,
-                                http_listener_config=http_listener_config,
-                                https_listener_config=https_listener_config,
-                                udp_listener_config=udp_listener_config,
-                                tags=tags,
-                                request_id=request_id,
-                                total_count=total_count,
-                                max_results=max_results,
-                                established_timeout=tcp_listener_config.get('EstablishedTimeout'),
-                                health_check=tcp_listener_config.get('HealthCheck'),
-                                health_check_connect_timeout=tcp_listener_config.get('HealthCheckConnectTimeout'),
-                                health_check_domain=tcp_listener_config.get('HealthCheckDomain'),
-                                health_check_http_code=tcp_listener_config.get('HealthCheckHttpCode'),
-                                health_check_interval=tcp_listener_config.get('HealthCheckInterval'),
-                                health_check_type=tcp_listener_config.get('HealthCheckType'),
-                                health_check_uri=tcp_listener_config.get('HealthCheckURI'),
-                                healthy_threshold=tcp_listener_config.get('HealthyThreshold'),
-                                persistence_timeout=tcp_listener_config.get('PersistenceTimeout'),
-                                proxy_protocol_v2_enabled=tcp_listener_config.get('ProxyProtocolV2Enabled'),
-                                unhealthy_threshold=tcp_listener_config.get('UnhealthyThreshold')
-
+                            SLBListener.objects.update_or_create(
+                                listener_id=slb_listener_id,
+                                defaults={
+                                    "LoadBalancerId": load_balancer,
+                                    "listener_port": listener_port,
+                                    "backend_server_port": backend_server_port,
+                                    "listener_protocol": listener_protocol,
+                                    "scheduler": scheduler,
+                                    "bandwidth": bandwidth,
+                                    "status": status,
+                                    "acl_status": acl_status,
+                                    "description": description,
+                                    "tcp_listener_config": tcp_listener_config,
+                                    "http_listener_config": http_listener_config,
+                                    "https_listener_config": https_listener_config,
+                                    "udp_listener_config": udp_listener_config,
+                                    "tags": tags,
+                                    "request_id": request_id,
+                                    "total_count": total_count,
+                                    "max_results": max_results,
+                                    "established_timeout": tcp_listener_config.get('EstablishedTimeout'),
+                                    "health_check": tcp_listener_config.get('HealthCheck'),
+                                    "health_check_connect_timeout": tcp_listener_config.get('HealthCheckConnectTimeout'),
+                                    "health_check_domain": tcp_listener_config.get('HealthCheckDomain'),
+                                    "health_check_http_code": tcp_listener_config.get('HealthCheckHttpCode'),
+                                    "health_check_interval": tcp_listener_config.get('HealthCheckInterval'),
+                                    "health_check_type": tcp_listener_config.get('HealthCheckType'),
+                                    "health_check_uri": tcp_listener_config.get('HealthCheckURI'),
+                                    "healthy_threshold": tcp_listener_config.get('HealthyThreshold'),
+                                    "persistence_timeout": tcp_listener_config.get('PersistenceTimeout'),
+                                    "proxy_protocol_v2_enabled": tcp_listener_config.get('ProxyProtocolV2Enabled'),
+                                    "unhealthy_threshold": tcp_listener_config.get('UnhealthyThreshold')
+                                }
                             )
                     else:
 
@@ -405,20 +410,20 @@ class AlibabaCloudLoadBalancerView(APIView):
                                                                           "Normal")
                             vpc_id = first_alb.get("VpcId")
                             zone_mappings = first_alb.get("ZoneMappings", [])
-                            ALB.objects.create(
+                            alb_instance, _ = ALB.objects.update_or_create(
                                 LoadBalancerId=load_balancer_id,
-                                LoadBalancerName=load_balancer_name,
-                                DNSName=dns_name,
-                                AddressType=address_type,
-                                AddressIpVersion=address_ip_version,
-                                LoadBalancerStatus=load_balancer_status,
-                                LoadBalancerBusinessStatus=load_balancer_business_status,
-                                VpcId=vpc_id,
-                                ZoneMappings=zone_mappings,
-                                RegionId='cn-beijing'
+                                defaults={
+                                    "LoadBalancerName": load_balancer_name,
+                                    "DNSName": dns_name,
+                                    "AddressType": address_type,
+                                    "AddressIpVersion": address_ip_version,
+                                    "LoadBalancerStatus": load_balancer_status,
+                                    "LoadBalancerBusinessStatus": load_balancer_business_status,
+                                    "VpcId": vpc_id,
+                                    "ZoneMappings": zone_mappings,
+                                    "RegionId": 'cn-beijing'
+                                }
                             )
-
-                            alb_instance = ALB.objects.get(LoadBalancerId=load_balancer_id)
                             for listener in listeners:
                                 listener_id = listener.get("ListenerId")
                                 listener_port = listener.get("ListenerPort")
@@ -432,24 +437,26 @@ class AlibabaCloudLoadBalancerView(APIView):
                                 listener_detail_dict = listener_detail_response.body.to_map()
                                 default_actions = listener_detail_dict.get("DefaultActions", [])
 
-                                ALBListener.objects.create(
+                                ALBListener.objects.update_or_create(
                                     LoadBalancerId=alb_instance,
                                     ListenerId=listener_id,
-                                    ListenerPort=listener_port,
-                                    ListenerProtocol=listener_protocol,
-                                    ListenerDescription=listener.get("ListenerDescription", ""),
-                                    ListenerStatus=listener.get("ListenerStatus", "Running"),
-                                    CaCertificateIds=listener_detail_dict.get("CaCertificateIds", []),
-                                    CaEnabled=listener_detail_dict.get("CaEnabled", False),
-                                    CertificateIds=listener_detail_dict.get("CertificateIds", []),
-                                    DefaultActions=default_actions,
-                                    GzipEnabled=listener_detail_dict.get("GzipEnabled", False),
-                                    Http2Enabled=listener_detail_dict.get("Http2Enabled", False),
-                                    IdleTimeout=listener_detail_dict.get("IdleTimeout", 15),
-                                    RequestTimeout=listener_detail_dict.get("RequestTimeout", 60),
-                                    SecurityPolicyId=listener_detail_dict.get("SecurityPolicyId"),
-                                    XForwardedForConfig=listener_detail_dict.get("XForwardedForConfig", {}),
-                                    QuicConfig=listener_detail_dict.get("QuicConfig", {})
+                                    defaults={
+                                        "ListenerPort": listener_port,
+                                        "ListenerProtocol": listener_protocol,
+                                        "ListenerDescription": listener.get("ListenerDescription", ""),
+                                        "ListenerStatus": listener.get("ListenerStatus", "Running"),
+                                        "CaCertificateIds": listener_detail_dict.get("CaCertificateIds", []),
+                                        "CaEnabled": listener_detail_dict.get("CaEnabled", False),
+                                        "CertificateIds": listener_detail_dict.get("CertificateIds", []),
+                                        "DefaultActions": default_actions,
+                                        "GzipEnabled": listener_detail_dict.get("GzipEnabled", False),
+                                        "Http2Enabled": listener_detail_dict.get("Http2Enabled", False),
+                                        "IdleTimeout": listener_detail_dict.get("IdleTimeout", 15),
+                                        "RequestTimeout": listener_detail_dict.get("RequestTimeout", 60),
+                                        "SecurityPolicyId": listener_detail_dict.get("SecurityPolicyId"),
+                                        "XForwardedForConfig": listener_detail_dict.get("XForwardedForConfig", {}),
+                                        "QuicConfig": listener_detail_dict.get("QuicConfig", {})
+                                    }
                                 )
 
 
@@ -490,7 +497,7 @@ class AlibabaCloudLoadBalancerView(APIView):
 class TencentCloudLoadBalancerView(APIView):
     def get(self, request):
         try:
-            lb_type = request.data.get('lb_type')
+            lb_type = request.query_params.get('lb_type') or request.data.get('lb_type')
             if lb_type == 'clb':
                 alb_obj = TxALBModels.objects.all()
                 serializer_alb = TxALBSerializer(alb_obj, many=True)
@@ -504,7 +511,7 @@ class TencentCloudLoadBalancerView(APIView):
                     }
                 })
             else:
-                return Response(status=500, data={
+                return Response(status=400, data={
                     "msg": "请输入正确的腾讯云负载均衡类型",
                     "data": {}
                 })
@@ -806,7 +813,8 @@ class TencentCloudLoadBalancerView(APIView):
 class UCloudLoadBalancerView(APIView):
     def get(self, request):
         try:
-            if request.data.get('lb_type') == 'ulb':
+            lb_type = request.query_params.get('lb_type') or request.data.get('lb_type')
+            if lb_type == 'ulb':
                 ulb_list = UcloudULBModels.objects.all()
                 if ulb_list:
                     serializer = UcloudULBSerializer(ulb_list, many=True)
@@ -821,7 +829,7 @@ class UCloudLoadBalancerView(APIView):
                         "msg": "未找到ULB数据，请先获取",
                         "data": {}
                     })
-            elif request.data.get('lb_type') == 'nlb':
+            elif lb_type == 'nlb':
                 nlb_list = UcloudNlbModels.objects.all()
                 if nlb_list:
                     serializer = UcloudNlbSerializer(nlb_list, many=True)
@@ -850,12 +858,35 @@ class UCloudLoadBalancerView(APIView):
 
     def post(self, request):
         try:
+            # UCloud SDK 底层请求会读取系统代理环境变量；若代理不可达会触发 SSLEOF/ProxyError。
+            # 这里优先直连 UCloud API，避免服务器残留代理配置导致请求失败。
+            for proxy_key in ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"]:
+                if proxy_key in os.environ:
+                    os.environ.pop(proxy_key, None)
+            if "NO_PROXY" in os.environ and os.environ["NO_PROXY"]:
+                if "api.ucloud.cn" not in os.environ["NO_PROXY"]:
+                    os.environ["NO_PROXY"] = os.environ["NO_PROXY"] + ",api.ucloud.cn"
+            else:
+                os.environ["NO_PROXY"] = "api.ucloud.cn,127.0.0.1,localhost"
+
             with open('config/config.yaml', 'r') as f:
                 config = yaml.safe_load(f)
-                region = config.get('ucloud')['region']
-                project_id = config.get('ucloud')['project_id']
-                public_key = config.get('ucloud')['public_key']
-                private_key = config.get('ucloud')['private_key']
+                region = str(config.get('ucloud', {}).get('region', '')).strip()
+                project_id = str(config.get('ucloud', {}).get('project_id', '')).strip()
+                public_key = str(config.get('ucloud', {}).get('public_key', '')).strip()
+                private_key = str(config.get('ucloud', {}).get('private_key', '')).strip()
+
+            if not all([region, project_id, public_key, private_key]):
+                return Response(status=500, data={
+                    "msg": "UCloud配置不完整",
+                    "data": {"error": "请检查 config/config.yaml 的 ucloud.region/project_id/public_key/private_key"}
+                })
+            if public_key.startswith('your_') or private_key.startswith('your_'):
+                return Response(status=500, data={
+                    "msg": "UCloud密钥未配置",
+                    "data": {"error": "检测到占位符密钥，请将 config/config.yaml 中 ucloud.public_key/private_key 替换为真实值"}
+                })
+
             client = Client({
                 "region": region,
                 "project_id": project_id,
@@ -911,28 +942,29 @@ class UCloudLoadBalancerView(APIView):
                                 "data": {"errors": u_ulb_ser.errors}
                             })
 
-                        response_listener = ulb.get("VServerSet")
+                        response_listener = ulb.get("VServerSet") or []
 
                         for listener in response_listener:
 
                             lis_ser = VServerSerializer(data=listener)
                             if lis_ser.is_valid():
-                                VServer.objects.create(
-                                    BackendSet=listener.get('BackendSet'),
-                                    ClientTimeout=listener.get('ClientTimeout'),
-                                    Domain=listener.get('Domain'),
-                                    EnableCompression=listener.get('EnableCompression'),
-                                    EnableHTTP2=listener.get('EnableHTTP2'),
-                                    ForwardPort=listener.get('ForwardPort'),
+                                VServer.objects.update_or_create(
                                     FrontendPort=listener.get('FrontendPort'),
-                                    ListenType=listener.get('ListenType'),
-                                    Method=listener.get('Method'),
-                                    MonitorType=listener.get('MonitorType'),
-                                    Path=listener.get('Path'),
-                                    PersistenceInfo=listener.get('PersistenceInfo'),
-                                    PersistenceType=listener.get('PersistenceType'),
-                                    PolicySet=listener.get('PolicySet'),
-                                    NLBID=ulb.get('ULBId')
+                                    ForwardPort=listener.get('ForwardPort'),
+                                    defaults={
+                                        "BackendSet": listener.get('BackendSet'),
+                                        "ClientTimeout": listener.get('ClientTimeout'),
+                                        "Domain": listener.get('Domain'),
+                                        "EnableCompression": listener.get('EnableCompression'),
+                                        "EnableHTTP2": listener.get('EnableHTTP2'),
+                                        "ListenType": listener.get('ListenType'),
+                                        "Method": listener.get('Method'),
+                                        "MonitorType": listener.get('MonitorType'),
+                                        "Path": listener.get('Path'),
+                                        "PersistenceInfo": listener.get('PersistenceInfo'),
+                                        "PersistenceType": listener.get('PersistenceType'),
+                                        "PolicySet": listener.get('PolicySet')
+                                    }
                                 )
 
                     return Response(status=200, data={
@@ -950,6 +982,13 @@ class UCloudLoadBalancerView(APIView):
                     })
 
             except Exception as e:
+                if "Signature VerifyAC Error" in str(e):
+                    return Response(status=500, data={
+                        "msg": "ULB数据处理失败",
+                        "data": {
+                            "error": "UCloud签名校验失败，请检查 public_key/private_key 是否匹配、是否有前后空格、project_id 是否正确"
+                        }
+                    })
 
                 return Response(status=500, data={
                     "msg": "ULB数据处理失败",
@@ -966,10 +1005,27 @@ class UCloudLoadBalancerView(APIView):
                         "data": {}
                     })
 
-                nlbs = resp.get('NLBs')
+                nlbs = resp.get('NLBs') or []
                 for nlb in nlbs:
                     print(nlb)
-                    u_nlb_ser = UcloudNlbSerializer(data=nlb)
+                    nlb_payload = {
+                        "NlbId": nlb.get('NLBId'),
+                        "Name": nlb.get('Name'),
+                        "Tag": nlb.get('Tag'),
+                        "Remark": nlb.get('Remark'),
+                        "IPVersion": nlb.get('IPVersion'),
+                        "SubnetId": nlb.get('SubnetId'),
+                        "IPInfos": nlb.get('IPInfos'),
+                        "ForwardingMode": nlb.get('ForwardingMode'),
+                        "ChargeType": nlb.get('ChargeType'),
+                        "CreateTime": nlb.get('CreateTime'),
+                        "PurchaseValue": nlb.get('PurchaseValue'),
+                        "Listeners": nlb.get('Listeners'),
+                        "Status": nlb.get('Status'),
+                        "AutoRenewEnabled": nlb.get('AutoRenewEnabled'),
+                        "DeletionProtection": nlb.get('DeletionProtection'),
+                    }
+                    u_nlb_ser = UcloudNlbSerializer(data=nlb_payload)
                     if u_nlb_ser.is_valid():
                         UcloudNlbModels.objects.update_or_create(
                             NlbId=nlb.get('NLBId'),
@@ -1005,9 +1061,24 @@ class UCloudLoadBalancerView(APIView):
                             "Limit": 100,
                         }
                         lis_resp = client.invoke("DescribeNLBListeners", params)
-                        lis_list = lis_resp.get('Listeners')
+                        lis_list = lis_resp.get('Listeners') or []
                         for lis in lis_list:
-                            lis_ser = UcloudNlbListenerSerializer(data=lis)
+                            lis_payload = {
+                                "ListenerId": lis.get('ListenerId'),
+                                "Name": lis.get('Name'),
+                                "remark": lis.get('Remark'),
+                                "StartPort": lis.get('StartPort'),
+                                "EndPort": lis.get('EndPort'),
+                                "Protocol": lis.get('Protocol'),
+                                "Scheduler": lis.get('Scheduler'),
+                                "StickinessTimeout": lis.get('StickinessTimeout'),
+                                "ForwardSrcIPMethod": lis.get('ForwardSrcIPMethod'),
+                                "HealthCheckConfig": lis.get('HealthCheckConfig'),
+                                "Targets": lis.get('Targets'),
+                                "State": lis.get('State'),
+                                "DeletionProtection": lis.get('DeletionProtection'),
+                            }
+                            lis_ser = UcloudNlbListenerSerializer(data=lis_payload)
                             if lis_ser.is_valid():
                                 UcloudNlbListenerModels.objects.update_or_create(
                                     ListenerId=lis.get('ListenerId'),
@@ -1027,6 +1098,11 @@ class UCloudLoadBalancerView(APIView):
                                         "NLBId": UcloudNlbModels.objects.get(NlbId=nlb.get('NLBId')),
                                     }
                                 )
+                            else:
+                                return Response(status=400, data={
+                                    "msg": "NLB监听器数据验证失败",
+                                    "data": {"errors": lis_ser.errors}
+                                })
 
 
                     except Exception as e:
@@ -1036,11 +1112,21 @@ class UCloudLoadBalancerView(APIView):
                         })
 
             except Exception as e:
-                print(str(e))
+                if "Signature VerifyAC Error" in str(e):
+                    return Response(status=500, data={
+                        "msg": "NLB数据处理失败",
+                        "data": {
+                            "error": "UCloud签名校验失败，请检查 public_key/private_key 是否匹配、是否有前后空格、project_id 是否正确"
+                        }
+                    })
+                return Response(status=500, data={
+                    "msg": "NLB数据处理失败",
+                    "data": {"error": str(e)}
+                })
             return Response(status=200, data={
                 "msg": "NLB数据处理完成",
                 "data": {
-                    "nlb_instances": resp.get('NLBs'),
+                    "nlb_instances": resp.get('NLBs') or [],
                     "nlb_listeners": lis_list if 'lis_list' in locals() else []
                 }
             })
