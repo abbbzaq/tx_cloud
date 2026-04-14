@@ -112,7 +112,7 @@ class AlibabaCloudLoadBalancerView(APIView):
                         listener_body = ali_response_listener_dict['body']
 
                         listener_body_ex = listener_body
-                        listener_body = listener_body["Listeners"]
+                        listeners = listener_body.get("Listeners", [])
                         load_balancer_id = load_balancer_list[0].get("LoadBalancerId")
 
                         load_balancer_name = load_balancer_list[0].get("LoadBalancerName")
@@ -138,103 +138,84 @@ class AlibabaCloudLoadBalancerView(APIView):
                         created_at = load_balancer_list[0].get("CreatedAt")
                         updated_at = load_balancer_list[0].get("UpdatedAt")
 
-                        LoadBalancer.objects.create(LoadBalancerId=load_balancer_id,
-                                                    LoadBalancerName=load_balancer_name,
-                                                    Address=address, AddressIPVersion=address_ip_version,
-                                                    AddressType=address_type, NetworkType=network_type,
-                                                    RegionId=region_id,
-                                                    RegionIdAlias=region_id_alias, MasterZoneId=master_zone_id,
-                                                    SlaveZoneId=slave_zone_id, VpcId=vpc_id, VSwitchId=vswitch_id,
-                                                    Bandwidth=bandwidth, LoadBalancerSpec=load_balancer_spec,
-                                                    InstanceChargeType=instance_charge_type,
-                                                    InternetChargeType=internet_charge_type,
-                                                    InternetChargeTypeAlias=internet_charge_type_alias,
-                                                    PayType=pay_type,
-                                                    LoadBalancerStatus=load_balancer_status,
-                                                    DeleteProtection=delete_protection,
-                                                    ResourceGroupId=resource_group_id,
-
-                                                    CreateTime=created_at, UpdateTime=updated_at)
-
-                        load_balancer = LoadBalancer.objects.get(LoadBalancerId=load_balancer_id)
-
-                        listener_port = listener_body[0]['ListenerPort']
-                        backend_server_port = listener_body[0]['BackendServerPort']
-
-                        listener_protocol = listener_body[0]['ListenerProtocol']
-
-                        scheduler = listener_body[0]['Scheduler']
-
-                        bandwidth = listener_body[0]['Bandwidth']
-
-                        status = listener_body[0]['Status']
-
-                        acl_status = listener_body[0]['AclStatus']
-
-                        description = listener_body[0]["Description"]
-
-                        tcp_listener_config = listener_body[0]["TCPListenerConfig"]
-
-                        http_listener_config = listener_body[0]["HTTPListenerConfig"]
-                        established_timeout = listener_body[0]["TCPListenerConfig"]['EstablishedTimeout']
-
-                        health_check = listener_body[0]["TCPListenerConfig"]['HealthCheck']
-                        health_check_connect_timeout = listener_body[0]["TCPListenerConfig"][
-                            'HealthCheckConnectTimeout']
-                        health_check_domain = listener_body[0]["TCPListenerConfig"]['HealthCheckDomain']
-                        health_check_http_code = listener_body[0]["TCPListenerConfig"]['HealthCheckHttpCode']
-                        health_check_interval = listener_body[0]["TCPListenerConfig"]['HealthCheckInterval']
-                        health_check_type = listener_body[0]["TCPListenerConfig"]['HealthCheckType']
-                        health_check_uri = listener_body[0]["TCPListenerConfig"]['HealthCheckURI']
-                        healthy_threshold = listener_body[0]["TCPListenerConfig"]['HealthyThreshold']
-                        persistence_timeout = listener_body[0]["TCPListenerConfig"]['PersistenceTimeout']
-                        proxy_protocol_v2_enabled = listener_body[0]["TCPListenerConfig"]['ProxyProtocolV2Enabled']
-                        unhealthy_threshold = listener_body[0]["TCPListenerConfig"]['UnhealthyThreshold']
-
-                        https_listener_config = listener_body[0]["HTTPSListenerConfig"]
-
-                        udp_listener_config = listener_body[0]["UDPListenerConfig"]
-
-                        tags = listener_body[0]["Tags"]
-
-                        request_id = listener_body_ex["RequestId"]
-
-                        total_count = listener_body_ex["TotalCount"]
-
-                        max_results = listener_body_ex["MaxResults"]
-
-                        SLBListener.objects.create(
-                            LoadBalancerId=load_balancer,
-                            listener_port=listener_port,
-                            backend_server_port=backend_server_port,
-                            listener_protocol=listener_protocol,
-                            scheduler=scheduler,
-                            bandwidth=bandwidth,
-                            status=status,
-                            acl_status=acl_status,
-                            description=description,
-                            tcp_listener_config=tcp_listener_config,
-                            http_listener_config=http_listener_config,
-                            https_listener_config=https_listener_config,
-                            udp_listener_config=udp_listener_config,
-                            tags=tags,
-                            request_id=request_id,
-                            total_count=total_count,
-                            max_results=max_results,
-                            established_timeout=established_timeout,
-                            health_check=health_check,
-                            health_check_connect_timeout=health_check_connect_timeout,
-                            health_check_domain=health_check_domain,
-                            health_check_http_code=health_check_http_code,
-                            health_check_interval=health_check_interval,
-                            health_check_type=health_check_type,
-                            health_check_uri=health_check_uri,
-                            healthy_threshold=healthy_threshold,
-                            persistence_timeout=persistence_timeout,
-                            proxy_protocol_v2_enabled=proxy_protocol_v2_enabled,
-                            unhealthy_threshold=unhealthy_threshold
-
+                        load_balancer, _ = LoadBalancer.objects.update_or_create(
+                            LoadBalancerId=load_balancer_id,
+                            defaults={
+                                "LoadBalancerName": load_balancer_name,
+                                "Address": address,
+                                "AddressIPVersion": address_ip_version,
+                                "AddressType": address_type,
+                                "NetworkType": network_type,
+                                "RegionId": region_id,
+                                "RegionIdAlias": region_id_alias,
+                                "MasterZoneId": master_zone_id,
+                                "SlaveZoneId": slave_zone_id,
+                                "VpcId": vpc_id,
+                                "VSwitchId": vswitch_id,
+                                "Bandwidth": bandwidth,
+                                "LoadBalancerSpec": load_balancer_spec,
+                                "InstanceChargeType": instance_charge_type,
+                                "InternetChargeType": internet_charge_type,
+                                "InternetChargeTypeAlias": internet_charge_type_alias,
+                                "PayType": pay_type,
+                                "LoadBalancerStatus": load_balancer_status,
+                                "DeleteProtection": delete_protection,
+                                "ResourceGroupId": resource_group_id,
+                            }
                         )
+
+                        if listeners:
+                            first_listener = listeners[0]
+                            listener_port = first_listener.get('ListenerPort')
+                            backend_server_port = first_listener.get('BackendServerPort')
+                            listener_protocol = first_listener.get('ListenerProtocol')
+                            scheduler = first_listener.get('Scheduler')
+                            bandwidth = first_listener.get('Bandwidth')
+                            status = first_listener.get('Status')
+                            acl_status = first_listener.get('AclStatus')
+                            description = first_listener.get("Description")
+                            tcp_listener_config = first_listener.get("TCPListenerConfig", {})
+                            http_listener_config = first_listener.get("HTTPListenerConfig", {})
+                            https_listener_config = first_listener.get("HTTPSListenerConfig", {})
+                            udp_listener_config = first_listener.get("UDPListenerConfig", {})
+                            tags = first_listener.get("Tags", [])
+
+                            request_id = listener_body_ex.get("RequestId")
+                            total_count = listener_body_ex.get("TotalCount")
+                            max_results = listener_body_ex.get("MaxResults")
+
+                            SLBListener.objects.create(
+                                LoadBalancerId=load_balancer,
+                                listener_port=listener_port,
+                                backend_server_port=backend_server_port,
+                                listener_protocol=listener_protocol,
+                                scheduler=scheduler,
+                                bandwidth=bandwidth,
+                                status=status,
+                                acl_status=acl_status,
+                                description=description,
+                                tcp_listener_config=tcp_listener_config,
+                                http_listener_config=http_listener_config,
+                                https_listener_config=https_listener_config,
+                                udp_listener_config=udp_listener_config,
+                                tags=tags,
+                                request_id=request_id,
+                                total_count=total_count,
+                                max_results=max_results,
+                                established_timeout=tcp_listener_config.get('EstablishedTimeout'),
+                                health_check=tcp_listener_config.get('HealthCheck'),
+                                health_check_connect_timeout=tcp_listener_config.get('HealthCheckConnectTimeout'),
+                                health_check_domain=tcp_listener_config.get('HealthCheckDomain'),
+                                health_check_http_code=tcp_listener_config.get('HealthCheckHttpCode'),
+                                health_check_interval=tcp_listener_config.get('HealthCheckInterval'),
+                                health_check_type=tcp_listener_config.get('HealthCheckType'),
+                                health_check_uri=tcp_listener_config.get('HealthCheckURI'),
+                                healthy_threshold=tcp_listener_config.get('HealthyThreshold'),
+                                persistence_timeout=tcp_listener_config.get('PersistenceTimeout'),
+                                proxy_protocol_v2_enabled=tcp_listener_config.get('ProxyProtocolV2Enabled'),
+                                unhealthy_threshold=tcp_listener_config.get('UnhealthyThreshold')
+
+                            )
                     else:
 
                         return Response(status=400, data={
@@ -580,17 +561,8 @@ class TencentCloudLoadBalancerView(APIView):
 
                 total = resp_json.get('TotalCount')
                 load_balancers = resp_json['LoadBalancerSet']
-                existing_ids = [obj.LoadBalancerId for obj in TxALBModels.objects.all()]
-                created_count = 0
-                existing_count = 0
-
                 for i in range(total):
                     load_balancer_item = load_balancers[i]
-
-                    if load_balancer_item['LoadBalancerId'] in existing_ids:
-
-                        existing_count += 1
-                        continue
 
                     tx_ser = TxALBSerializer(data=load_balancer_item)
                     if tx_ser.is_valid():
@@ -658,70 +630,70 @@ class TencentCloudLoadBalancerView(APIView):
                         NumericalVpcId = first_item.get('NumericalVpcId', None)
                         RequestId = first_item.get('RequestId', '')
 
-                        # 创建ALB
-                        TxALBModels.objects.create(
+                        TxALBModels.objects.update_or_create(
                             LoadBalancerId=load_balancer_id,
-                            LoadBalancerName=load_balancer_name,
-                            LoadBalancerType=LoadBalancerType,
-                            Forward=Forward,
-                            Domain=Domain,
-                            LoadBalancerVips=LoadBalancerVips,
-                            Status=Status,
-                            CreateTime=CreateTime,
-                            StatusTime=StatusTime,
-                            ProjectId=ProjectId,
-                            VpcId=VpcId,
-                            SubnetId=SubnetId,
-                            OpenBgp=OpenBgp,
-                            Snat=Snat,
-                            Isolation=Isolation,
-                            Log=Log,
-                            LogSetId=LogSetId,
-                            LogTopicId=LogTopicId,
-                            Tags=Tags,
-                            SecureGroups=SecureGroups,
-                            TargetRegionInfo=TargetRegionInfo,
-                            AnycastZone=AnycastZone,
-                            AddressIPVersion=AddressIPVersion,
-                            AddressIPv6=AddressIPv6,
-                            VipIsp=VipIsp,
-                            MasterZone=MasterZone,
-                            BackupZoneSet=BackupZoneSet,
-                            IsolatedTime=IsolatedTime,
-                            ExpireTime=ExpireTime,
-                            ChargeType=ChargeType,
-                            NetworkAttributes=NetworkAttributes,
-                            PrepaidAttributes=PrepaidAttributes,
-                            ExtraInfo=ExtraInfo,
-                            IsDDos=IsDDos,
-                            ConfigId=ConfigId,
-                            LoadBalancerPassToTarget=LoadBalancerPassToTarget,
-                            ExclusiveCluster=ExclusiveCluster,
-                            IPv6Mode=IPv6Mode,
-                            SnatPro=SnatPro,
-                            SnatIps=SnatIps,
-                            SlaType=SlaType,
-                            IsBlock=IsBlock,
-                            IsBlockTime=IsBlockTime,
-                            LocalBgp=LocalBgp,
-                            ClusterTag=ClusterTag,
-                            MixIpTarget=MixIpTarget,
-                            Zones=Zones,
-                            NfvInfo=NfvInfo,
-                            HealthLogSetId=HealthLogSetId,
-                            HealthLogTopicId=HealthLogTopicId,
-                            ClusterIds=ClusterIds,
-                            AttributeFlags=AttributeFlags,
-                            LoadBalancerDomain=LoadBalancerDomain,
-                            Egress=Egress,
-                            Exclusive=Exclusive,
-                            TargetCount=TargetCount,
-                            AssociateEndpoint=AssociateEndpoint,
-                            AvailableZoneAffinityInfo=AvailableZoneAffinityInfo,
-                            NumericalVpcId=NumericalVpcId,
-                            RequestId=RequestId,
+                            defaults={
+                                "LoadBalancerName": load_balancer_name,
+                                "LoadBalancerType": LoadBalancerType,
+                                "Forward": Forward,
+                                "Domain": Domain,
+                                "LoadBalancerVips": LoadBalancerVips,
+                                "Status": Status,
+                                "CreateTime": CreateTime,
+                                "StatusTime": StatusTime,
+                                "ProjectId": ProjectId,
+                                "VpcId": VpcId,
+                                "SubnetId": SubnetId,
+                                "OpenBgp": OpenBgp,
+                                "Snat": Snat,
+                                "Isolation": Isolation,
+                                "Log": Log,
+                                "LogSetId": LogSetId,
+                                "LogTopicId": LogTopicId,
+                                "Tags": Tags,
+                                "SecureGroups": SecureGroups,
+                                "TargetRegionInfo": TargetRegionInfo,
+                                "AnycastZone": AnycastZone,
+                                "AddressIPVersion": AddressIPVersion,
+                                "AddressIPv6": AddressIPv6,
+                                "VipIsp": VipIsp,
+                                "MasterZone": MasterZone,
+                                "BackupZoneSet": BackupZoneSet,
+                                "IsolatedTime": IsolatedTime,
+                                "ExpireTime": ExpireTime,
+                                "ChargeType": ChargeType,
+                                "NetworkAttributes": NetworkAttributes,
+                                "PrepaidAttributes": PrepaidAttributes,
+                                "ExtraInfo": ExtraInfo,
+                                "IsDDos": IsDDos,
+                                "ConfigId": ConfigId,
+                                "LoadBalancerPassToTarget": LoadBalancerPassToTarget,
+                                "ExclusiveCluster": ExclusiveCluster,
+                                "IPv6Mode": IPv6Mode,
+                                "SnatPro": SnatPro,
+                                "SnatIps": SnatIps,
+                                "SlaType": SlaType,
+                                "IsBlock": IsBlock,
+                                "IsBlockTime": IsBlockTime,
+                                "LocalBgp": LocalBgp,
+                                "ClusterTag": ClusterTag,
+                                "MixIpTarget": MixIpTarget,
+                                "Zones": Zones,
+                                "NfvInfo": NfvInfo,
+                                "HealthLogSetId": HealthLogSetId,
+                                "HealthLogTopicId": HealthLogTopicId,
+                                "ClusterIds": ClusterIds,
+                                "AttributeFlags": AttributeFlags,
+                                "LoadBalancerDomain": LoadBalancerDomain,
+                                "Egress": Egress,
+                                "Exclusive": Exclusive,
+                                "TargetCount": TargetCount,
+                                "AssociateEndpoint": AssociateEndpoint,
+                                "AvailableZoneAffinityInfo": AvailableZoneAffinityInfo,
+                                "NumericalVpcId": NumericalVpcId,
+                                "RequestId": RequestId,
+                            }
                         )
-                        created_count += 1
 
                         try:
                             req = models.DescribeListenersRequest()
@@ -747,44 +719,46 @@ class TencentCloudLoadBalancerView(APIView):
                                             LoadBalancerId=lis["LoadBalancerId"]
                                         )
 
-                                        TxListenerModel.objects.create(
-                                            LoadBalancer=alb_instance,
+                                        TxListenerModel.objects.update_or_create(
                                             ListenerId=s_data.get('ListenerId'),
-                                            ListenerName=s_data.get('ListenerName', ''),
-                                            Protocol=s_data.get('Protocol', 'HTTP'),
-                                            Port=s_data.get('Port', 80),
-                                            EndPort=s_data.get('EndPort', 0),
-                                            Scheduler=s_data.get('Scheduler'),
-                                            SessionExpireTime=s_data.get('SessionExpireTime'),
-                                            SniSwitch=s_data.get('SniSwitch', 0),
-                                            SessionType=s_data.get('SessionType', 'NORMAL'),
-                                            KeepaliveEnable=s_data.get('KeepaliveEnable', 0),
-                                            Toa=s_data.get('Toa', False),
-                                            DeregisterTargetRst=s_data.get('DeregisterTargetRst', False),
-                                            MaxConn=s_data.get('MaxConn', -1),
-                                            MaxCps=s_data.get('MaxCps', -1),
-                                            IdleConnectTimeout=s_data.get('IdleConnectTimeout'),
-                                            RescheduleInterval=s_data.get('RescheduleInterval'),
-                                            RescheduleStartTime=s_data.get('RescheduleStartTime'),
-                                            DataCompressMode=s_data.get('DataCompressMode', 'transparent'),
-                                            AttrFlags=s_data.get('AttrFlags', []),
-                                            QuicStatus=s_data.get('QuicStatus', 'QUIC_INACTIVE'),
-                                            Http2=s_data.get('Http2', False),
-                                            HttpGzip=s_data.get('HttpGzip', False),
-                                            CreateTime=s_data.get('CreateTime'),
-                                            CertificateInfo=s_data.get('Certificate'),
-                                            HealthCheckInfo=s_data.get('HealthCheck'),
-                                            TargetType=s_data.get('TargetType'),
-                                            TargetGroup=s_data.get('TargetGroup'),
-                                            TargetGroupList=s_data.get('TargetGroupList'),
-                                            OAuthInfo=s_data.get('OAuth'),
-                                            WafDomainId=s_data.get('WafDomainId', ''),
-                                            TrpcCallee=s_data.get('TrpcCallee', ''),
-                                            TrpcFunc=s_data.get('TrpcFunc', ''),
-                                            CookieName=s_data.get('CookieName', ''),
-                                            RequestId=s_data.get('RequestId', ''),
-                                            BeAutoCreated=s_data.get('BeAutoCreated', False),
-                                            DefaultServer=s_data.get('DefaultServer', False),
+                                            defaults={
+                                                "LoadBalancer": alb_instance,
+                                                "ListenerName": s_data.get('ListenerName', ''),
+                                                "Protocol": s_data.get('Protocol', 'HTTP'),
+                                                "Port": s_data.get('Port', 80),
+                                                "EndPort": s_data.get('EndPort', 0),
+                                                "Scheduler": s_data.get('Scheduler'),
+                                                "SessionExpireTime": s_data.get('SessionExpireTime'),
+                                                "SniSwitch": s_data.get('SniSwitch', 0),
+                                                "SessionType": s_data.get('SessionType', 'NORMAL'),
+                                                "KeepaliveEnable": s_data.get('KeepaliveEnable', 0),
+                                                "Toa": s_data.get('Toa', False),
+                                                "DeregisterTargetRst": s_data.get('DeregisterTargetRst', False),
+                                                "MaxConn": s_data.get('MaxConn', -1),
+                                                "MaxCps": s_data.get('MaxCps', -1),
+                                                "IdleConnectTimeout": s_data.get('IdleConnectTimeout'),
+                                                "RescheduleInterval": s_data.get('RescheduleInterval'),
+                                                "RescheduleStartTime": s_data.get('RescheduleStartTime'),
+                                                "DataCompressMode": s_data.get('DataCompressMode', 'transparent'),
+                                                "AttrFlags": s_data.get('AttrFlags', []),
+                                                "QuicStatus": s_data.get('QuicStatus', 'QUIC_INACTIVE'),
+                                                "Http2": s_data.get('Http2', False),
+                                                "HttpGzip": s_data.get('HttpGzip', False),
+                                                "CreateTime": s_data.get('CreateTime'),
+                                                "CertificateInfo": s_data.get('Certificate'),
+                                                "HealthCheckInfo": s_data.get('HealthCheck'),
+                                                "TargetType": s_data.get('TargetType'),
+                                                "TargetGroup": s_data.get('TargetGroup'),
+                                                "TargetGroupList": s_data.get('TargetGroupList'),
+                                                "OAuthInfo": s_data.get('OAuth'),
+                                                "WafDomainId": s_data.get('WafDomainId', ''),
+                                                "TrpcCallee": s_data.get('TrpcCallee', ''),
+                                                "TrpcFunc": s_data.get('TrpcFunc', ''),
+                                                "CookieName": s_data.get('CookieName', ''),
+                                                "RequestId": s_data.get('RequestId', ''),
+                                                "BeAutoCreated": s_data.get('BeAutoCreated', False),
+                                                "DefaultServer": s_data.get('DefaultServer', False),
+                                            }
                                         )
 
 
@@ -902,37 +876,33 @@ class UCloudLoadBalancerView(APIView):
                 if response.get('TotalCount', 0) > 0:
 
                     for ulb in response.get('DataSet', []):
-                        if UcloudULBModels.objects.filter(ULBId=ulb.get('ULBId')):
-                            return Response(status=200, data={
-                                "msg": "ULB实例已存在",
-                                "data": {"ulb_instance": ulb}
-                            })
 
                         u_ulb_ser = UcloudULBSerializer(data=ulb)
                         if u_ulb_ser.is_valid():
-                            UcloudULBModels.objects.create(
-                                Bandwidth=ulb.get('Bandwidth'),
-
-                                BandwidthType=ulb.get('BandwidthType'),
-                                BusinessId=ulb.get('BusinessId'),
-                                CreateTime=ulb.get('CreateTime'),
-                                EnableLog=ulb.get('EnableLog'),
-                                FirewallSet=ulb.get('FirewallSet'),
-                                IPSet=ulb.get('IPSet'),
-                                IPVersion=ulb.get('IPVersion'),
-                                ListenType=ulb.get('ListenType'),
-                                LogSet=ulb.get('LogSet'),
-                                Name=ulb.get('Name'),
-                                PrivateIP=ulb.get('PrivateIP'),
-                                Remark=ulb.get('Remark'),
-                                Resource=ulb.get('Resource'),
-                                SnatIps=ulb.get('SnatIps'),
-                                SubnetId=ulb.get('SubnetId'),
-                                Tag=ulb.get('Tag'),
+                            UcloudULBModels.objects.update_or_create(
                                 ULBId=ulb.get('ULBId'),
-                                ULBType=ulb.get('ULBType'),
-                                VPCId=ulb.get('VPCId'),
-                                VServerSet=ulb.get('VServerSet'),
+                                defaults={
+                                    "Bandwidth": ulb.get('Bandwidth'),
+                                    "BandwidthType": ulb.get('BandwidthType'),
+                                    "BusinessId": ulb.get('BusinessId'),
+                                    "CreateTime": ulb.get('CreateTime'),
+                                    "EnableLog": ulb.get('EnableLog'),
+                                    "FirewallSet": ulb.get('FirewallSet'),
+                                    "IPSet": ulb.get('IPSet'),
+                                    "IPVersion": ulb.get('IPVersion'),
+                                    "ListenType": ulb.get('ListenType'),
+                                    "LogSet": ulb.get('LogSet'),
+                                    "Name": ulb.get('Name'),
+                                    "PrivateIP": ulb.get('PrivateIP'),
+                                    "Remark": ulb.get('Remark'),
+                                    "Resource": ulb.get('Resource'),
+                                    "SnatIps": ulb.get('SnatIps'),
+                                    "SubnetId": ulb.get('SubnetId'),
+                                    "Tag": ulb.get('Tag'),
+                                    "ULBType": ulb.get('ULBType'),
+                                    "VPCId": ulb.get('VPCId'),
+                                    "VServerSet": ulb.get('VServerSet'),
+                                }
                             )
                         else:
                             return Response(status=400, data={
@@ -998,30 +968,26 @@ class UCloudLoadBalancerView(APIView):
                 nlbs = resp.get('NLBs')
                 for nlb in nlbs:
                     print(nlb)
-                    if UcloudNlbModels.objects.filter(NlbId=nlb.get('NLBId')):
-                        return Response(status=200, data={
-                            "msg": "NLB实例已存在",
-                            "data": {"nlb_instance": nlb}
-                        })
                     u_nlb_ser = UcloudNlbSerializer(data=nlb)
                     if u_nlb_ser.is_valid():
-                        UcloudNlbModels.objects.create(
+                        UcloudNlbModels.objects.update_or_create(
                             NlbId=nlb.get('NLBId'),
-                            Name=nlb.get('Name'),
-                            Tag=nlb.get('Tag'),
-                            Remark=nlb.get('Remark'),
-                            IPVersion=nlb.get('IPVersion'),
-                            SubnetId=nlb.get('SubnetId'),
-                            IPInfos=nlb.get('IPInfos'),
-                            ForwardingMode=nlb.get('ForwardingMode'),
-                            ChargeType=nlb.get('ChargeType'),
-                            CreateTime=nlb.get('CreateTime'),
-                            PurchaseValue=nlb.get('PurchaseValue'),
-                            Listeners=nlb.get('Listeners'),
-                            Status=nlb.get('Status'),
-                            AutoRenewEnabled=nlb.get('AutoRenewEnabled'),
-                            DeletionProtection=nlb.get('DeletionProtection'),
-
+                            defaults={
+                                "Name": nlb.get('Name'),
+                                "Tag": nlb.get('Tag'),
+                                "Remark": nlb.get('Remark'),
+                                "IPVersion": nlb.get('IPVersion'),
+                                "SubnetId": nlb.get('SubnetId'),
+                                "IPInfos": nlb.get('IPInfos'),
+                                "ForwardingMode": nlb.get('ForwardingMode'),
+                                "ChargeType": nlb.get('ChargeType'),
+                                "CreateTime": nlb.get('CreateTime'),
+                                "PurchaseValue": nlb.get('PurchaseValue'),
+                                "Listeners": nlb.get('Listeners'),
+                                "Status": nlb.get('Status'),
+                                "AutoRenewEnabled": nlb.get('AutoRenewEnabled'),
+                                "DeletionProtection": nlb.get('DeletionProtection'),
+                            }
                         )
                     else:
                         return Response(status=400, data={
@@ -1042,23 +1008,23 @@ class UCloudLoadBalancerView(APIView):
                         for lis in lis_list:
                             lis_ser = UcloudNlbListenerSerializer(data=lis)
                             if lis_ser.is_valid():
-                                UcloudNlbListenerModels.objects.create(
-
+                                UcloudNlbListenerModels.objects.update_or_create(
                                     ListenerId=lis.get('ListenerId'),
-                                    Name=lis.get('Name'),
-                                    remark=lis.get('Remark'),
-                                    StartPort=lis.get('StartPort'),
-                                    EndPort=lis.get('EndPort'),
-                                    Protocol=lis.get('Protocol'),
-                                    Scheduler=lis.get('Scheduler'),
-                                    StickinessTimeout=lis.get('StickinessTimeout'),
-                                    ForwardSrcIPMethod=lis.get('ForwardSrcIPMethod'),
-                                    HealthCheckConfig=lis.get('HealthCheckConfig'),
-                                    Targets=lis.get('Targets'),
-                                    State=lis.get('State'),
-                                    DeletionProtection=lis.get('DeletionProtection'),
-                                    NLBId=UcloudNlbModels.objects.get(NlbId=nlb.get('NLBId'))
-
+                                    defaults={
+                                        "Name": lis.get('Name'),
+                                        "remark": lis.get('Remark'),
+                                        "StartPort": lis.get('StartPort'),
+                                        "EndPort": lis.get('EndPort'),
+                                        "Protocol": lis.get('Protocol'),
+                                        "Scheduler": lis.get('Scheduler'),
+                                        "StickinessTimeout": lis.get('StickinessTimeout'),
+                                        "ForwardSrcIPMethod": lis.get('ForwardSrcIPMethod'),
+                                        "HealthCheckConfig": lis.get('HealthCheckConfig'),
+                                        "Targets": lis.get('Targets'),
+                                        "State": lis.get('State'),
+                                        "DeletionProtection": lis.get('DeletionProtection'),
+                                        "NLBId": UcloudNlbModels.objects.get(NlbId=nlb.get('NLBId')),
+                                    }
                                 )
 
 
